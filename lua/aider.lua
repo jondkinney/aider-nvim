@@ -32,6 +32,21 @@ local function get_float_config()
     }
 end
 
+-- Function to get list of open buffer file names
+local function get_buffer_file_names()
+    local file_names = {}
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) then
+            local name = vim.api.nvim_buf_get_name(bufnr)
+            if name ~= "" and not name:match("^term://") then
+                local relative_path = vim.fn.fnamemodify(name, ":.")
+                table.insert(file_names, relative_path)
+            end
+        end
+    end
+    return file_names
+end
+
 -- Function to open Aider
 function M.open_aider()
     local window_type = M.config.window_type
@@ -54,11 +69,13 @@ function M.open_aider()
     -- Get the buffer number of the newly created terminal
     local bufnr = vim.api.nvim_get_current_buf()
     
-    -- Function to send the "aider" command
+    -- Function to send the "aider" command with file names
     local function send_aider_command()
         local chan_id = vim.b.terminal_job_id
         if chan_id then
-            vim.api.nvim_chan_send(chan_id, "aider\n")
+            local file_names = get_buffer_file_names()
+            local command = "aider " .. table.concat(file_names, " ") .. "\n"
+            vim.api.nvim_chan_send(chan_id, command)
             return true
         end
         return false
