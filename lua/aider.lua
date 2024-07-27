@@ -50,14 +50,17 @@ function M.open_aider()
     end
 
     vim.cmd("terminal")
-
-    -- Use autocmd to run 'aider' command after the terminal is opened
-    vim.cmd([[
-        augroup AiderAutoCmd
-            autocmd!
-            autocmd TermOpen * ++once lua vim.api.nvim_chan_send(vim.b.terminal_job_id, "aider\n")
-        augroup END
-    ]])
+    
+    -- Get the buffer number of the newly created terminal
+    local bufnr = vim.api.nvim_get_current_buf()
+    
+    -- Wait for the terminal job to start
+    vim.defer_fn(function()
+        local chan_id = vim.b.terminal_job_id
+        if chan_id then
+            vim.api.nvim_chan_send(chan_id, "aider\n")
+        end
+    end, 100)  -- Wait for 100ms before sending the command
 
     vim.cmd("startinsert")
 end
