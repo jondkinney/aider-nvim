@@ -6,11 +6,22 @@ M.config = {
     float_config = {
         width = 0.8,
         height = 0.8,
-    }
+    },
+    debug = false  -- Add debug option
 }
 
 -- Store the current list of file names
 local current_file_names = {}
+
+-- Store the Aider terminal buffer number
+local aider_bufnr = nil
+
+-- Debug print function
+local function debug_print(msg)
+    if M.config.debug then
+        print("Aider Debug: " .. msg)
+    end
+end
 
 -- Function to setup the plugin
 function M.setup(opts)
@@ -75,10 +86,17 @@ end
 
 -- Function to update Aider with the current file list
 local function update_aider()
-    local chan_id = vim.b.terminal_job_id
-    if chan_id then
-        local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
-        vim.api.nvim_chan_send(chan_id, command)
+    if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
+        local chan_id = vim.api.nvim_buf_get_var(aider_bufnr, "terminal_job_id")
+        if chan_id then
+            local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
+            vim.api.nvim_chan_send(chan_id, command)
+            debug_print("Sent update command: " .. command)
+        else
+            debug_print("No channel ID found for Aider buffer")
+        end
+    else
+        debug_print("Aider buffer not found or invalid")
     end
 end
 
@@ -102,7 +120,7 @@ function M.open_aider()
     vim.cmd("terminal")
     
     -- Get the buffer number of the newly created terminal
-    local bufnr = vim.api.nvim_get_current_buf()
+    aider_bufnr = vim.api.nvim_get_current_buf()
     
     -- Function to send the "aider" command with file names
     local function send_aider_command()
@@ -111,8 +129,10 @@ function M.open_aider()
             get_buffer_file_names()  -- Update current_file_names
             local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
             vim.api.nvim_chan_send(chan_id, command)
+            debug_print("Initial Aider command sent")
             return true
         end
+        debug_print("Failed to send initial Aider command")
         return false
     end
 
@@ -136,18 +156,26 @@ end
 -- Set up autocommands for dynamic file list updates
 local function setup_autocommands()
     local group = vim.api.nvim_create_augroup("AiderFileUpdates", { clear = true })
-    vim.api.nvim_create_autocmd({"BufEnter", "BufAdd"}, {
+    vim.api.nvim_create_autocmd({"BufNewFile", "BufRead"}, {
         group = group,
+        pattern = "*",
         callback = function(ev)
-            add_file(ev.file)
-            update_aider()
+            if vim.bo[ev.buf].buftype == "" then  -- Only for normal buffers
+                debug_print("BufNewFile/BufRead triggered for " .. ev.file)
+                add_file(ev.file)
+                update_aider()
+            end
         end,
     })
     vim.api.nvim_create_autocmd({"BufDelete"}, {
         group = group,
+        pattern = "*",
         callback = function(ev)
-            remove_file(ev.file)
-            update_aider()
+            if vim.bo[ev.buf].buftype == "" then  -- Only for normal buffers
+                debug_print("BufDelete triggered for " .. ev.file)
+                remove_file(ev.file)
+                update_aider()
+            end
         end,
     })
 end
