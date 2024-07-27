@@ -9,6 +9,9 @@ M.config = {
     }
 }
 
+-- Store the current list of file names
+local current_file_names = {}
+
 -- Function to setup the plugin
 function M.setup(opts)
     M.config = vim.tbl_deep_extend("force", M.config, opts or {})
@@ -47,7 +50,36 @@ local function get_buffer_file_names()
             end
         end
     end
+    current_file_names = file_names
     return file_names
+end
+
+-- Function to add a file to the current list
+local function add_file(file_path)
+    local relative_path = vim.fn.fnamemodify(file_path, ":.")
+    if not vim.tbl_contains(current_file_names, relative_path) then
+        table.insert(current_file_names, relative_path)
+    end
+end
+
+-- Function to remove a file from the current list
+local function remove_file(file_path)
+    local relative_path = vim.fn.fnamemodify(file_path, ":.")
+    for i, name in ipairs(current_file_names) do
+        if name == relative_path then
+            table.remove(current_file_names, i)
+            break
+        end
+    end
+end
+
+-- Function to update Aider with the current file list
+local function update_aider()
+    local chan_id = vim.b.terminal_job_id
+    if chan_id then
+        local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
+        vim.api.nvim_chan_send(chan_id, command)
+    end
 end
 
 -- Function to open Aider
@@ -76,8 +108,8 @@ function M.open_aider()
     local function send_aider_command()
         local chan_id = vim.b.terminal_job_id
         if chan_id then
-            local file_names = get_buffer_file_names()
-            local command = "aider " .. table.concat(file_names, " ") .. "\n"
+            get_buffer_file_names()  -- Update current_file_names
+            local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
             vim.api.nvim_chan_send(chan_id, command)
             return true
         end
@@ -99,6 +131,31 @@ function M.open_aider()
     end))
 
     vim.cmd("startinsert")
+end
+
+-- Set up autocommands for dynamic file list updates
+local function setup_autocommands()
+    local group = vim.api.nvim_create_augroup("AiderFileUpdates", { clear = true })
+    vim.api.nvim_create_autocmd({"BufEnter", "BufAdd"}, {
+        group = group,
+        callback = function(ev)
+            add_file(ev.file)
+            update_aider()
+        end,
+    })
+    vim.api.nvim_create_autocmd({"BufDelete"}, {
+        group = group,
+        callback = function(ev)
+            remove_file(ev.file)
+            update_aider()
+        end,
+    })
+end
+
+-- Modify setup function to include autocommands
+function M.setup(opts)
+    M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+    setup_autocommands()
 end
 
 return M
