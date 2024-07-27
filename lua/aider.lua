@@ -54,13 +54,29 @@ function M.open_aider()
     -- Get the buffer number of the newly created terminal
     local bufnr = vim.api.nvim_get_current_buf()
     
-    -- Wait for the terminal job to start
-    vim.defer_fn(function()
+    -- Function to send the "aider" command
+    local function send_aider_command()
         local chan_id = vim.b.terminal_job_id
         if chan_id then
             vim.api.nvim_chan_send(chan_id, "aider\n")
+            return true
         end
-    end, 100)  -- Wait for 100ms before sending the command
+        return false
+    end
+
+    -- Set up a timer to check if the terminal is ready
+    local timer = vim.loop.new_timer()
+    local start_time = vim.loop.now()
+    local timeout = 5000 -- 5 seconds timeout
+
+    timer:start(0, 100, vim.schedule_wrap(function()
+        if send_aider_command() then
+            timer:stop()
+        elseif vim.loop.now() - start_time > timeout then
+            print("Timeout: Unable to start aider. Please try again.")
+            timer:stop()
+        end
+    end))
 
     vim.cmd("startinsert")
 end
