@@ -38,9 +38,12 @@ local function get_buffer_file_names()
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_is_loaded(bufnr) then
             local name = vim.api.nvim_buf_get_name(bufnr)
-            if name ~= "" and not name:match("^term://") then
-                local relative_path = vim.fn.fnamemodify(name, ":.")
-                table.insert(file_names, relative_path)
+            if name ~= "" and vim.fn.filereadable(name) == 1 and not name:match("^term://") then
+                local buftype = vim.api.nvim_buf_get_option(bufnr, 'buftype')
+                if buftype == '' then  -- Only include normal buffers
+                    local relative_path = vim.fn.fnamemodify(name, ":.")
+                    table.insert(file_names, relative_path)
+                end
             end
         end
     end
