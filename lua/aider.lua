@@ -50,7 +50,6 @@ function M.open_aider()
     end
 
     vim.cmd("terminal")
-    vim.cmd("startinsert")
 
     -- Use autocmd to run 'aider' command after the terminal is opened
     vim.cmd([[
@@ -59,6 +58,8 @@ function M.open_aider()
             autocmd TermOpen * ++once lua vim.api.nvim_chan_send(vim.b.terminal_job_id, "aider\n")
         augroup END
     ]])
+
+    vim.cmd("startinsert")
 end
 
 return M
