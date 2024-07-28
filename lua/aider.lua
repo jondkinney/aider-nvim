@@ -164,7 +164,7 @@ function M.open_aider()
 		0,
 		100,
 		vim.schedule_wrap(function()
-			if send_initial_aider_command() then
+			if not aider_initialized and send_initial_aider_command() then
 				timer:stop()
 			elseif vim.loop.now() - start_time > timeout then
 				print("Timeout: Unable to start aider. Please try again.")
