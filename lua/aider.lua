@@ -23,12 +23,6 @@ local function debug_print(msg)
 	end
 end
 
--- Function to setup the plugin
-function M.setup(opts)
-	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
-	setup_autocommands()
-end
-
 -- Function to calculate floating window size and position
 local function get_float_config()
 	local width = math.floor(vim.o.columns * M.config.float_config.width)
@@ -176,7 +170,6 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
-			print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
@@ -188,7 +181,6 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
-			print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufDelete triggered for " .. ev.file)
@@ -198,7 +190,7 @@ local function setup_autocommands()
 	})
 end
 
--- Modify setup function to include autocommands
+-- Function to setup the plugin
 function M.setup(opts)
 	M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 	setup_autocommands()
