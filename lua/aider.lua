@@ -7,7 +7,7 @@ M.config = {
 		width = 0.8,
 		height = 0.8,
 	},
-	debug = false, -- Add debug option
+	debug = true, -- Enable debug option
 }
 
 -- Store the current list of file names
@@ -172,12 +172,12 @@ end
 -- Set up autocommands for dynamic file list updates
 local function setup_autocommands()
 	local group = vim.api.nvim_create_augroup("AiderFileUpdates", { clear = true })
-	vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
+	vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead", "BufEnter" }, {
 		group = group,
 		pattern = "*",
 		callback = function(ev)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
-				debug_print("BufNewFile/BufRead triggered for " .. ev.file)
+				debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
 				update_aider()
 			end
 		end,
