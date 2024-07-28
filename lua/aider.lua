@@ -179,6 +179,9 @@ local function setup_autocommands()
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
 				update_aider()
+			else
+				debug_print("Debug: buff type: " .. vim.bo[ev.buf].buftype)
+				debug_print("Debug: file readable: " .. vim.fn.filereadable(ev.file))
 			end
 		end,
 	})
