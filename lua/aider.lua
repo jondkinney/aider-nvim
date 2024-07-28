@@ -176,12 +176,11 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
+			print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
+			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
 				update_aider()
-			else
-				debug_print("Debug: buff type: " .. vim.bo[ev.buf].buftype)
-				debug_print("Debug: file readable: " .. vim.fn.filereadable(ev.file))
 			end
 		end,
 	})
@@ -189,6 +188,8 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
+			print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
+			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufDelete triggered for " .. ev.file)
 				update_aider()
