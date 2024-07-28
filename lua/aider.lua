@@ -78,7 +78,7 @@ local function send_command_to_terminal(command)
 end
 
 -- Function to update Aider with the current file list
-local function update_aider()
+local function update_aider(immediate)
 	if not aider_initialized then
 		debug_print("Aider not initialized, skipping update")
 		return
@@ -105,16 +105,35 @@ local function update_aider()
 	-- Update current file names
 	current_file_names = new_file_names
 
-	-- Send commands to terminal only if there are changes and after a short delay
+	-- Function to send commands
+	local function send_commands()
+		if #add_files > 0 then
+			send_command_to_terminal("/add " .. table.concat(add_files, " "))
+		end
+		if #drop_files > 0 then
+			send_command_to_terminal("/drop " .. table.concat(drop_files, " "))
+		end
+	end
+
+	-- Send commands to terminal only if there are changes
 	if #add_files > 0 or #drop_files > 0 then
-		vim.defer_fn(function()
-			if #add_files > 0 then
-				send_command_to_terminal("/add " .. table.concat(add_files, " "))
-			end
-			if #drop_files > 0 then
-				send_command_to_terminal("/drop " .. table.concat(drop_files, " "))
-			end
-		end, 1000) -- 1 second delay
+		if immediate then
+			send_commands()
+		else
+			vim.defer_fn(send_commands, 1000) -- 1 second delay
+		end
+	end
+end
+
+-- Function to handle buffer deletion
+local function handle_buffer_delete(file)
+	if aider_initialized then
+		local index = vim.tbl_contains(current_file_names, file)
+		if index then
+			table.remove(current_file_names, index)
+			send_command_to_terminal("/drop " .. file)
+			debug_print("Dropped file: " .. file)
+		end
 	end
 end
 
@@ -193,7 +212,7 @@ local function setup_autocommands()
 				debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 				if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 					debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
-					update_aider()
+					update_aider(false)
 				end
 			end
 		end,
@@ -206,7 +225,7 @@ local function setup_autocommands()
 				debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 				if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 					debug_print("BufDelete triggered for " .. ev.file)
-					update_aider()
+					handle_buffer_delete(ev.file)
 				end
 			end
 		end,
