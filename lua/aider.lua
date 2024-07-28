@@ -62,42 +62,53 @@ local function get_buffer_file_names()
 			end
 		end
 	end
-	current_file_names = file_names
 	return file_names
 end
 
--- Function to add a file to the current list
-local function add_file(file_path)
-	local relative_path = vim.fn.fnamemodify(file_path, ":.")
-	if not vim.tbl_contains(current_file_names, relative_path) then
-		table.insert(current_file_names, relative_path)
-	end
-end
-
--- Function to remove a file from the current list
-local function remove_file(file_path)
-	local relative_path = vim.fn.fnamemodify(file_path, ":.")
-	for i, name in ipairs(current_file_names) do
-		if name == relative_path then
-			table.remove(current_file_names, i)
-			break
-		end
-	end
-end
-
--- Function to update Aider with the current file list
-local function update_aider()
+-- Function to send a command to the terminal buffer
+local function send_command_to_terminal(command)
 	if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
 		local chan_id = vim.api.nvim_buf_get_var(aider_bufnr, "terminal_job_id")
 		if chan_id then
-			local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
-			vim.api.nvim_chan_send(chan_id, command)
-			debug_print("Sent update command: " .. command)
+			vim.api.nvim_chan_send(chan_id, command .. "\n")
+			debug_print("Sent command: " .. command)
 		else
 			debug_print("No channel ID found for Aider buffer")
 		end
 	else
 		debug_print("Aider buffer not found or invalid")
+	end
+end
+
+-- Function to update Aider with the current file list
+local function update_aider()
+	local new_file_names = get_buffer_file_names()
+	local add_files = {}
+	local drop_files = {}
+
+	-- Find files to add
+	for _, file in ipairs(new_file_names) do
+		if not vim.tbl_contains(current_file_names, file) then
+			table.insert(add_files, file)
+		end
+	end
+
+	-- Find files to drop
+	for _, file in ipairs(current_file_names) do
+		if not vim.tbl_contains(new_file_names, file) then
+			table.insert(drop_files, file)
+		end
+	end
+
+	-- Update current file names
+	current_file_names = new_file_names
+
+	-- Send commands to terminal
+	if #add_files > 0 then
+		send_command_to_terminal("/add " .. table.concat(add_files, " "))
+	end
+	if #drop_files > 0 then
+		send_command_to_terminal("/drop " .. table.concat(drop_files, " "))
 	end
 end
 
@@ -127,8 +138,8 @@ function M.open_aider()
 	local function send_aider_command()
 		local chan_id = vim.b.terminal_job_id
 		if chan_id then
-			get_buffer_file_names() -- Update current_file_names
-			local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
+			current_file_names = get_buffer_file_names() -- Update current_file_names
+			local command = "/add " .. table.concat(current_file_names, " ") .. "\n"
 			vim.api.nvim_chan_send(chan_id, command)
 			debug_print("Initial Aider command sent")
 			return true
@@ -167,7 +178,6 @@ local function setup_autocommands()
 		callback = function(ev)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufNewFile/BufRead triggered for " .. ev.file)
-				add_file(ev.file)
 				update_aider()
 			end
 		end,
@@ -178,7 +188,6 @@ local function setup_autocommands()
 		callback = function(ev)
 			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
 				debug_print("BufDelete triggered for " .. ev.file)
-				remove_file(ev.file)
 				update_aider()
 			end
 		end,
