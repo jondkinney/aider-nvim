@@ -16,6 +16,9 @@ local current_file_names = {}
 -- Store the Aider terminal buffer number
 local aider_bufnr = nil
 
+-- Flag to check if Aider has been initialized
+local aider_initialized = false
+
 -- Debug print function
 local function debug_print(msg)
 	if M.config.debug then
@@ -76,6 +79,11 @@ end
 
 -- Function to update Aider with the current file list
 local function update_aider()
+	if not aider_initialized then
+		debug_print("Aider not initialized, skipping update")
+		return
+	end
+
 	local new_file_names = get_buffer_file_names()
 	local add_files = {}
 	local drop_files = {}
@@ -97,7 +105,7 @@ local function update_aider()
 	-- Update current file names
 	current_file_names = new_file_names
 
-	-- Send commands to terminal
+	-- Send commands to terminal only if there are changes
 	if #add_files > 0 then
 		send_command_to_terminal("/add " .. table.concat(add_files, " "))
 	end
@@ -136,6 +144,7 @@ function M.open_aider()
 			local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
 			vim.api.nvim_chan_send(chan_id, command)
 			debug_print("Initial Aider command sent")
+			aider_initialized = true
 			return true
 		end
 		debug_print("Failed to send initial Aider command")
