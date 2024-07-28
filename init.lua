@@ -56,5 +56,24 @@ require("aider").setup({
         name = "gpt-3.5-turbo", -- Default model to use
         temperature = 0.7, -- Controls randomness (0.0 to 1.0)
         max_tokens = 1000, -- Maximum number of tokens per response
+        prompt_prefix = "AI: ", -- Prefix for AI responses in the chat window
+    },
+
+    -- Aider Command Configuration
+    aider_command = {
+        path = "aider", -- Path to the aider executable
+        args = {}, -- Additional command-line arguments for aider
+    },
+
+    -- API Configuration
+    api = {
+        endpoint = nil, -- Custom API endpoint (nil for default)
+    },
+
+    -- Output Formatting
+    output = {
+        use_markdown = true, -- Use markdown formatting in output
+        code_block_lang = "lua", -- Default language for code blocks
+        max_lines = 1000, -- Maximum number of lines to display in output
     },
 })
