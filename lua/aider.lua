@@ -120,60 +120,66 @@ end
 
 -- Function to open Aider
 function M.open_aider()
-	local window_type = M.config.window_type
+    -- Check if Aider is already running
+    if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
+        print("Aider already running. Use /add or /drop to modify the files to act upon.")
+        return
+    end
 
-	if window_type == "vsplit" then
-		vim.cmd("vsplit")
-	elseif window_type == "hsplit" then
-		vim.cmd("split")
-	elseif window_type == "float" then
-		local buf = vim.api.nvim_create_buf(false, true)
-		local float_config = get_float_config()
-		vim.api.nvim_open_win(buf, true, float_config)
-	else
-		print("Invalid window type. Using default (vsplit).")
-		vim.cmd("vsplit")
-	end
+    local window_type = M.config.window_type
 
-	vim.cmd("terminal")
+    if window_type == "vsplit" then
+        vim.cmd("vsplit")
+    elseif window_type == "hsplit" then
+        vim.cmd("split")
+    elseif window_type == "float" then
+        local buf = vim.api.nvim_create_buf(false, true)
+        local float_config = get_float_config()
+        vim.api.nvim_open_win(buf, true, float_config)
+    else
+        print("Invalid window type. Using default (vsplit).")
+        vim.cmd("vsplit")
+    end
 
-	-- Get the buffer number of the newly created terminal
-	aider_bufnr = vim.api.nvim_get_current_buf()
+    vim.cmd("terminal")
 
-	-- Function to send the initial list of file names to Aider
-	local function send_initial_aider_command()
-		local chan_id = vim.b.terminal_job_id
-		if chan_id then
-			current_file_names = get_buffer_file_names() -- Update current_file_names
-			local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
-			vim.api.nvim_chan_send(chan_id, command)
-			debug_print("Initial Aider command sent")
-			aider_initialized = true
-			return true
-		end
-		debug_print("Failed to send initial Aider command")
-		return false
-	end
+    -- Get the buffer number of the newly created terminal
+    aider_bufnr = vim.api.nvim_get_current_buf()
 
-	-- Set up a timer to check if the terminal is ready
-	local timer = vim.loop.new_timer()
-	local start_time = vim.loop.now()
-	local timeout = 5000 -- 5 seconds timeout
+    -- Function to send the initial list of file names to Aider
+    local function send_initial_aider_command()
+        local chan_id = vim.b.terminal_job_id
+        if chan_id then
+            current_file_names = get_buffer_file_names() -- Update current_file_names
+            local command = "aider " .. table.concat(current_file_names, " ") .. "\n"
+            vim.api.nvim_chan_send(chan_id, command)
+            debug_print("Initial Aider command sent")
+            aider_initialized = true
+            return true
+        end
+        debug_print("Failed to send initial Aider command")
+        return false
+    end
 
-	timer:start(
-		0,
-		100,
-		vim.schedule_wrap(function()
-			if not aider_initialized and send_initial_aider_command() then
-				timer:stop()
-			elseif vim.loop.now() - start_time > timeout then
-				print("Timeout: Unable to start aider. Please try again.")
-				timer:stop()
-			end
-		end)
-	)
+    -- Set up a timer to check if the terminal is ready
+    local timer = vim.loop.new_timer()
+    local start_time = vim.loop.now()
+    local timeout = 5000 -- 5 seconds timeout
 
-	vim.cmd("startinsert")
+    timer:start(
+        0,
+        100,
+        vim.schedule_wrap(function()
+            if not aider_initialized and send_initial_aider_command() then
+                timer:stop()
+            elseif vim.loop.now() - start_time > timeout then
+                print("Timeout: Unable to start aider. Please try again.")
+                timer:stop()
+            end
+        end)
+    )
+
+    vim.cmd("startinsert")
 end
 
 -- Set up autocommands for dynamic file list updates
