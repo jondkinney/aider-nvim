@@ -183,10 +183,12 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
-			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
-			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
-				debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
-				update_aider()
+			if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
+				debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
+				if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
+					debug_print("BufNewFile/BufRead/BufEnter triggered for " .. ev.file)
+					update_aider()
+				end
 			end
 		end,
 	})
@@ -194,10 +196,12 @@ local function setup_autocommands()
 		group = group,
 		pattern = "*",
 		callback = function(ev)
-			debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
-			if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
-				debug_print("BufDelete triggered for " .. ev.file)
-				update_aider()
+			if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
+				debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
+				if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
+					debug_print("BufDelete triggered for " .. ev.file)
+					update_aider()
+				end
 			end
 		end,
 	})
