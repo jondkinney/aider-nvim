@@ -199,6 +199,16 @@ function M.open_aider()
     )
 
     vim.cmd("startinsert")
+
+    -- Set up an autocmd to update Aider when entering the terminal buffer
+    vim.api.nvim_create_autocmd("BufEnter", {
+        buffer = aider_bufnr,
+        callback = function()
+            if aider_initialized then
+                update_aider(true)
+            end
+        end,
+    })
 end
 
 -- Set up autocommands for dynamic file list updates
