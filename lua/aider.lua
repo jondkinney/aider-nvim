@@ -217,14 +217,14 @@ local function setup_autocommands()
 			end
 		end,
 	})
-	vim.api.nvim_create_autocmd({ "BufDelete" }, {
+	vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
 		group = group,
 		pattern = "*",
 		callback = function(ev)
 			if aider_bufnr and vim.api.nvim_buf_is_valid(aider_bufnr) then
 				debug_print("Autocommand triggered for event: " .. ev.event .. " with buffer: " .. ev.buf)
 				if vim.bo[ev.buf].buftype == "" and vim.fn.filereadable(ev.file) == 1 then -- Only for normal buffers with files
-					debug_print("BufDelete triggered for " .. ev.file)
+					debug_print("BufDelete or BufWipeout triggered for " .. ev.file)
 					handle_buffer_delete(ev.file)
 				end
 			end
