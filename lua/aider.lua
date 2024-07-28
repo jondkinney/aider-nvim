@@ -105,12 +105,16 @@ local function update_aider()
 	-- Update current file names
 	current_file_names = new_file_names
 
-	-- Send commands to terminal only if there are changes
-	if #add_files > 0 then
-		send_command_to_terminal("/add " .. table.concat(add_files, " "))
-	end
-	if #drop_files > 0 then
-		send_command_to_terminal("/drop " .. table.concat(drop_files, " "))
+	-- Send commands to terminal only if there are changes and after a short delay
+	if #add_files > 0 or #drop_files > 0 then
+		vim.defer_fn(function()
+			if #add_files > 0 then
+				send_command_to_terminal("/add " .. table.concat(add_files, " "))
+			end
+			if #drop_files > 0 then
+				send_command_to_terminal("/drop " .. table.concat(drop_files, " "))
+			end
+		end, 1000) -- 1 second delay
 	end
 end
 
